@@ -1,7 +1,7 @@
 from rest_framework.permissions import (
     IsAuthenticated, IsAuthenticatedOrReadOnly
 )
-from rest_framework import viewsets, filters, pagination
+from rest_framework import viewsets, filters, pagination, mixins
 from django.shortcuts import get_object_or_404
 
 from posts.models import Post, Group, Comment, User
@@ -32,7 +32,8 @@ class CommentViewSet(viewsets.ModelViewSet):
         return new_queryset
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        post = get_object_or_404(Post, pk=self.kwargs.get('post_id'))
+        serializer.save(author=self.request.user, post=post)
 
 
 class GroupViewSet(viewsets.ReadOnlyModelViewSet):
@@ -41,7 +42,8 @@ class GroupViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
 
-class FollowViewSet(viewsets.ModelViewSet):
+class FollowViewSet(mixins.ListModelMixin, mixins.CreateModelMixin,
+                    viewsets.GenericViewSet):
     serializer_class = FollowSerializer
     permission_classes = (IsAuthenticated,)
     filter_backends = (filters.SearchFilter,)
